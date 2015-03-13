@@ -5,14 +5,14 @@
 
 _realname=ffmpeg
 pkgbase="mingw-w64-${_realname}"
-pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}" "${MINGW_PACKAGE_PREFIX}-${_realname}-bundled")
 pkgver=4.4.1
 pkgrel=1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
 mingw_arch=('mingw32' 'mingw64' 'ucrt64' 'clang64' 'clang32')
 url="https://ffmpeg.org/"
-license=('GPL')
+license=('LGPL')
 options=('staticlibs' 'strip')
 depends=("${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-bzip2"
@@ -23,8 +23,6 @@ depends=("${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-gnutls"
          "${MINGW_PACKAGE_PREFIX}-gsm"
          "${MINGW_PACKAGE_PREFIX}-lame"
-         "${MINGW_PACKAGE_PREFIX}-libass"
-         "${MINGW_PACKAGE_PREFIX}-libbluray"
          "${MINGW_PACKAGE_PREFIX}-libcaca"
          "${MINGW_PACKAGE_PREFIX}-libexif"
          "${MINGW_PACKAGE_PREFIX}-libmfx"
@@ -36,31 +34,28 @@ depends=("${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-libwebp"
          "${MINGW_PACKAGE_PREFIX}-libxml2"
          "${MINGW_PACKAGE_PREFIX}-openal"
-         "${MINGW_PACKAGE_PREFIX}-opencore-amr"
          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
          "${MINGW_PACKAGE_PREFIX}-opus"
-         "${MINGW_PACKAGE_PREFIX}-rtmpdump"
          "${MINGW_PACKAGE_PREFIX}-SDL2"
          "${MINGW_PACKAGE_PREFIX}-speex"
          "${MINGW_PACKAGE_PREFIX}-srt"
          "${MINGW_PACKAGE_PREFIX}-vulkan"
-         "${MINGW_PACKAGE_PREFIX}-x264"
-         "${MINGW_PACKAGE_PREFIX}-x265"
-         "${MINGW_PACKAGE_PREFIX}-xvidcore"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 makedepends=("${MINGW_PACKAGE_PREFIX}-dlfcn"
              "${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
              "${MINGW_PACKAGE_PREFIX}-amf-headers"
              "${MINGW_PACKAGE_PREFIX}-ffnvcodec-headers"
-             "${MINGW_PACKAGE_PREFIX}-nasm")
-source=(https://ffmpeg.org/releases/${_realname}-${pkgver}.tar.xz{,.asc}
+             "${MINGW_PACKAGE_PREFIX}-nasm"
+             "${MINGW_PACKAGE_PREFIX}-ntldd-git"
+             "${MINGW_PACKAGE_PREFIX}-aom")
+source=("$_realname"::"git+https://github.com/InitialForce/FFmpeg#branch=release/4.1")
         "pathtools.c"
         "pathtools.h"
         "0005-Win32-Add-path-relocation-to-frei0r-plugins-search.patch"
         "0001-get_cabac_inline_x86-Dont-inline-if-32-bit-clang-on-windows.patch")
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
-sha256sums=('eadbad9e9ab30b25f5520fbfde99fae4a92a1ae3c0257a8d68569a4651e30e02'
+sha256sums=('SKIP'
             'SKIP'
             '6f1016e6647b6340fdceefaf24ff391f4c0ea3c785ddf70c9794ca2356797888'
             '6ce4dcf4ef6c4bce48dbcb6f1b5226baf79f74ac76719fb0c06419a0aadb37a3'
@@ -73,7 +68,7 @@ prepare() {
     cmp "${startdir}/../mingw-w64-pathtools/pathtools.h" "${srcdir}/pathtools.h"
   } || exit 1
 
-  cd "${srcdir}/${_realname}-${pkgver}"
+  cd "${srcdir}/${_realname}
   cp -fHv "${srcdir}"/pathtools.[ch] libavfilter/
 
   patch -p1 -i "${srcdir}/0005-Win32-Add-path-relocation-to-frei0r-plugins-search.patch"
@@ -94,32 +89,22 @@ build() {
     --enable-dxva2
     --enable-d3d11va
     --enable-fontconfig
-    --enable-gnutls
-    --enable-gpl
-    --enable-libaom
-    --enable-libass
-    --enable-libbluray
+    --enable-ffnvcodec \
+
+
     --enable-libcaca
     --enable-libcelt
-    --enable-libdav1d
-    --enable-libfreetype
-    --enable-libgsm
+
     --enable-libmfx
-    --enable-libmodplug
     --enable-libmp3lame
-    --enable-libopencore_amrnb
-    --enable-libopencore_amrwb
     --enable-libopenjpeg
     --enable-libopus
     --enable-librtmp
-    --enable-libsoxr
     --enable-libspeex
     --enable-libsrt
     --enable-libtheora
     --enable-libvorbis
-    --enable-libx264
-    --enable-libx265
-    --enable-libxvid
+
     --enable-libvpx
     --enable-libwebp
     --enable-libxml2
@@ -133,6 +118,7 @@ build() {
     --enable-vulkan
     --enable-zlib
     --disable-doc
+    --build-suffix=-if
   )
 
   if [[ ${MINGW_PACKAGE_PREFIX} != *-clang-* ]]; then
@@ -188,4 +174,28 @@ package() {
 
   local PREFIX_DEPS=$(cygpath -am ${MINGW_PREFIX})
   find ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig -name *.pc -exec sed -i -e"s|${PREFIX_DEPS}|${MINGW_PREFIX}|g" {} \;
+}
+
+collect_deps() {
+  pushd "${pkgdir}${MINGW_PREFIX}"/bin/
+  ntldd -R *.dll *.exe |grep -v WINDOWS | grep -v "not found" | grep git-sdk-64 | column -t | awk '{print $3}' | sed 's|\\|/|g' | xargs cygpath | xargs -I{} cp -u {} .
+  popd
+}
+
+package_mingw-w64-x86_64-ffmpeg() {
+  package
+}
+
+package_mingw-w64-x86_64-ffmpeg-bundled() {
+  package
+  collect_deps
+}
+
+package_mingw-w64-i686-ffmpeg() {
+  package
+}
+
+package_mingw-w64-i686-ffmpeg-bundled() {
+  package
+  collect_deps
 }
