@@ -82,6 +82,7 @@ build() {
     --enable-libtheora \
     --enable-libvorbis \
     --enable-libvpx \
+    --enable-libmfx \
     --enable-openal \
     --enable-libwavpack \
     --enable-pic \
