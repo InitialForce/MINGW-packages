@@ -1,0 +1,35 @@
+_realname=mfx_dispatch
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=1.9
+pkgrel=1
+pkgdesc="Autotooled/Cmakified version of the opensource Intel media sdk dispatcher."
+arch=('any')
+url="https://github.com/lu-zero/mfx_dispatch"
+groups=("${MINGW_PACKAGE_PREFIX}")
+license=('LGPL')
+options=('staticlibs' 'strip')
+depends=()
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
+source=("$_realname"::"git+https://github.com/lu-zero/mfx_dispatch#branch=master")
+sha1sums=('SKIP')
+
+prepare() {
+  cd "${srcdir}/${_realname}"
+  autoreconf -i
+}
+
+build() {
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}"
+  cd "${srcdir}/build-${MINGW_CHOST}"
+
+  ../${_realname}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --host=${MINGW_CHOST} \
+    --build=${CARCH%%-*} \
+  make
+}
+
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+}
