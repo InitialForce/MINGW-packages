@@ -42,7 +42,7 @@ depends=(
         #"${MINGW_PACKAGE_PREFIX}-opencore-amr"
 
 makedepends=("yasm" "${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
-source=("$_realname"::"git+http://github.com/InitialForce/FFmpeg#branch=release/2.6")
+source=("$_realname"::"git+http://github.com/InitialForce/FFmpeg#branch=master")
 sha1sums=('SKIP')
 
 prepare() {
