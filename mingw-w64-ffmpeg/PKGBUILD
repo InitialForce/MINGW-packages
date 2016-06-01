@@ -66,8 +66,6 @@ build() {
     --enable-libcaca \
     --enable-libcelt \
     --enable-libmp3lame \
-    --enable-libopencore_amrnb \
-    --enable-libopencore_amrwb \
     ${opt_conf} \
     --enable-libopus \
     --enable-libschroedinger \
