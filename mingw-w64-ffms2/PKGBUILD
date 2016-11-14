@@ -3,7 +3,7 @@
 _realname=ffms2
 pkgbase=mingw-w64-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-pkgver=2.22
+pkgver=2.23
 pkgrel=1
 pkgdesc="A cross-platform wrapper library around libav/FFmpeg (mingw-w64)"
 arch=('any')
@@ -12,8 +12,10 @@ license=('MIT')
 options=('staticlibs' 'strip')
 depends=("${MINGW_PACKAGE_PREFIX}-ffmpeg")
 makedepends=("${MINGW_PACKAGE_PREFIX}-gcc" "${MINGW_PACKAGE_PREFIX}-pkg-config")
-source=("${_realname}-${pkgver}.tar.gz"::"https://github.com/FFMS/ffms2/archive/${pkgver}.tar.gz")
-sha256sums=('c7d880172756c253f2c5673044dabf03c19890dcfe64da5104ee9f42a1a573a0')
+source=("$_realname"::"git+http://github.com/InitialForce/FFMS2#branch=2.23")
+sha1sums=('SKIP')
+#source=("${_realname}-${pkgver}.tar.gz"::"https://github.com/FFMS/ffms2/archive/${pkgver}.tar.gz")
+#sha1sums=('eec050a824ff6275536b9b30f26ac375e44d33bb')
 
 packagedir=${_realname}
 
