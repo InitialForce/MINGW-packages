@@ -49,7 +49,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-dlfcn"
              "${MINGW_PACKAGE_PREFIX}-nasm"
              "${MINGW_PACKAGE_PREFIX}-ntldd-git"
              "${MINGW_PACKAGE_PREFIX}-aom")
-source=("$_realname"::"git+https://github.com/InitialForce/FFmpeg#branch=release/4.4")
+source=("${_realname}"::"git+https://github.com/InitialForce/FFmpeg#branch=stable/4.4"
         "pathtools.c"
         "pathtools.h"
         "0005-Win32-Add-path-relocation-to-frei0r-plugins-search.patch"
@@ -57,7 +57,6 @@ source=("$_realname"::"git+https://github.com/InitialForce/FFmpeg#branch=release
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
 sha256sums=('SKIP'
             'SKIP'
-            '6f1016e6647b6340fdceefaf24ff391f4c0ea3c785ddf70c9794ca2356797888'
             '6ce4dcf4ef6c4bce48dbcb6f1b5226baf79f74ac76719fb0c06419a0aadb37a3'
             '63aa930515c10484a68cb8940f453cba01cf3f5d0d72c86b0bc03777acb704ba'
             'b19edf64c3daff6acebeb2e45be4e13c5ee035fd24ba1bf9e77a5376efe83628')
@@ -68,7 +67,7 @@ prepare() {
     cmp "${startdir}/../mingw-w64-pathtools/pathtools.h" "${srcdir}/pathtools.h"
   } || exit 1
 
-  cd "${srcdir}/${_realname}
+  cd "${srcdir}/${_realname}"
   cp -fHv "${srcdir}"/pathtools.[ch] libavfilter/
 
   patch -p1 -i "${srcdir}/0005-Win32-Add-path-relocation-to-frei0r-plugins-search.patch"
@@ -161,7 +160,7 @@ check() {
   done
 }
 
-package() {
+package_() {
   for _variant in -static -shared; do
     cd "${srcdir}/build-${MINGW_CHOST}${_variant}"
     make DESTDIR="${pkgdir}" install
@@ -183,19 +182,28 @@ collect_deps() {
 }
 
 package_mingw-w64-x86_64-ffmpeg() {
-  package
+  package_
 }
 
 package_mingw-w64-x86_64-ffmpeg-bundled() {
-  package
+  package_
+  collect_deps
+}
+
+package_mingw-w64-clang-x86_64-ffmpeg() {
+  package_
+}
+
+package_mingw-w64-clang-x86_64-ffmpeg-bundled() {
+  package_
   collect_deps
 }
 
 package_mingw-w64-i686-ffmpeg() {
-  package
+  package_
 }
 
 package_mingw-w64-i686-ffmpeg-bundled() {
-  package
+  package_
   collect_deps
 }
