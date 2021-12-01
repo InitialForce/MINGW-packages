@@ -18,6 +18,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-bzip2"
          "${MINGW_PACKAGE_PREFIX}-celt"
          $([[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]] || echo "${MINGW_PACKAGE_PREFIX}-frei0r-plugins")
+         "${MINGW_PACKAGE_PREFIX}-amf-headers"
          "${MINGW_PACKAGE_PREFIX}-fontconfig"
          "${MINGW_PACKAGE_PREFIX}-dav1d"
          "${MINGW_PACKAGE_PREFIX}-gnutls"
@@ -41,6 +42,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-srt"
          "${MINGW_PACKAGE_PREFIX}-vulkan"
          "${MINGW_PACKAGE_PREFIX}-zlib")
+
 makedepends=("${MINGW_PACKAGE_PREFIX}-dlfcn"
              "${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-pkg-config"
@@ -48,7 +50,12 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-dlfcn"
              "${MINGW_PACKAGE_PREFIX}-ffnvcodec-headers"
              "${MINGW_PACKAGE_PREFIX}-nasm"
              "${MINGW_PACKAGE_PREFIX}-ntldd-git"
-             "${MINGW_PACKAGE_PREFIX}-aom")
+             "${MINGW_PACKAGE_PREFIX}-aom"
+             git
+             diffutils
+             patch
+             make
+         )
 source=("${_realname}"::"git+https://github.com/InitialForce/FFmpeg#branch=stable/4.4"
         "pathtools.c"
         "pathtools.h"
@@ -98,7 +105,6 @@ build() {
     --enable-libmp3lame
     --enable-libopenjpeg
     --enable-libopus
-    --enable-librtmp
     --enable-libspeex
     --enable-libsrt
     --enable-libtheora
@@ -119,12 +125,6 @@ build() {
     --disable-doc
     --build-suffix=-if
   )
-
-  if [[ ${MINGW_PACKAGE_PREFIX} != *-clang-* ]]; then
-    common_config+=(
-      --enable-frei0r
-    )
-  fi
 
   for _variant in -static -shared; do
     [[ -d "${srcdir}/build-${MINGW_CHOST}${_variant}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}${_variant}"
@@ -177,7 +177,7 @@ package_() {
 
 collect_deps() {
   pushd "${pkgdir}${MINGW_PREFIX}"/bin/
-  ntldd -R *.dll *.exe |grep -v WINDOWS | grep -v "not found" | grep git-sdk-64 | column -t | awk '{print $3}' | sed 's|\\|/|g' | xargs cygpath | xargs -I{} cp -u {} .
+  ntldd -R *.dll *.exe |grep -v WINDOWS | grep -v "not found" | grep ${MINGW_ARCH} | column -t | awk '{print $3}' | sed 's|\\|/|g' | xargs cygpath | xargs -I{} cp -u {} .
   popd
 }
 
