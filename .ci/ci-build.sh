@@ -50,7 +50,7 @@ for package in "${packages[@]}"; do
         for pkg in *.pkg.tar.*; do
             pkgname="$(echo "$pkg" | rev | cut -d- -f4- | rev)"
             echo "::group::[install] ${pkgname}"
-            grep -qFx "${package}" "$(dirname "$0")/ci-dont-install-list.txt" || pacman --noprogressbar --upgrade --noconfirm $pkg
+            grep -qFx "${package}" "$(dirname "$0")/ci-dont-install-list.txt" || pacman --noprogressbar --upgrade --noconfirm --overwrite \* $pkg
             echo "::endgroup::"
 
             echo "::group::[meta-diff] ${pkgname}"
@@ -63,12 +63,12 @@ for package in "${packages[@]}"; do
             diff -Nur <(pacman -Fl "$pkgname" | sed -e 's|^[^ ]* |/|' | sort) <(pacman -Ql "$pkgname" | sed -e 's|^[^/]*||' | sort) || true
             echo "::endgroup::"
 
-            echo "::group::[uninstall] ${pkgname}"
-            message "Uninstalling $pkgname"
-            repo-add $PWD/../artifacts/ci.db.tar.gz $PWD/$pkg
-            pacman -Sy
-            pacman -R --recursive --unneeded --noconfirm --noprogressbar "$pkgname"
-            echo "::endgroup::"
+            #echo "::group::[uninstall] ${pkgname}"
+            #message "Uninstalling $pkgname"
+            #repo-add $PWD/../artifacts/ci.db.tar.gz $PWD/$pkg
+            #pacman -Sy
+            #pacman -R --recursive --unneeded --noconfirm --noprogressbar "$pkgname"
+            #echo "::endgroup::"
         done
         cd - > /dev/null
     else
@@ -89,19 +89,19 @@ for package in "${packages[@]}"; do
         cd - > /dev/null
         echo "::endgroup::"
 
-        echo "::group::[uninstall] ${package}"
-        repo-add $PWD/artifacts/ci.db.tar.gz "${package}"/*.pkg.tar.*
-        pacman -Sy
-        message "Uninstalling $package"
-        cd "$package"
-        export installed_packages=()
-        for pkg in *.pkg.tar.*; do
-            installed_packages+=("$(echo "$pkg" | rev | cut -d- -f4- | rev)")
-        done
-        pacman -R --recursive --unneeded --noconfirm --noprogressbar "${installed_packages[@]}"
-        unset installed_packages
-        cd - > /dev/null
-        echo "::endgroup::"
+        #echo "::group::[uninstall] ${package}"
+        #repo-add $PWD/artifacts/ci.db.tar.gz "${package}"/*.pkg.tar.*
+        #pacman -Sy
+        #message "Uninstalling $package"
+        #cd "$package"
+        #export installed_packages=()
+        #for pkg in *.pkg.tar.*; do
+            #installed_packages+=("$(echo "$pkg" | rev | cut -d- -f4- | rev)")
+        #done
+        #pacman -R --recursive --unneeded --noconfirm --noprogressbar "${installed_packages[@]}"
+        #unset installed_packages
+        #cd - > /dev/null
+        #echo "::endgroup::"
     fi
 
     mv "${package}"/*.pkg.tar.* artifacts
