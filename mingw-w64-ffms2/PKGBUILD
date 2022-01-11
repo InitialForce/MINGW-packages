@@ -22,6 +22,9 @@ makedepends=(
     "${MINGW_PACKAGE_PREFIX}-gcc"
     "${MINGW_PACKAGE_PREFIX}-pkg-config"
      unzip
+     autoconf
+     automake
+     base-devel
 )
 source=("${_realname}"::"git+https://github.com/InitialForce/FFMS2#branch=master"
         "0001-ffmsindex-add-municode-ldflag.patch")
@@ -35,6 +38,7 @@ prepare() {
   patch -Np1 -i "${srcdir}/0001-ffmsindex-add-municode-ldflag.patch"
 
   mkdir -p src/config
+  autoupdate
   autoreconf -fiv
 }
 
