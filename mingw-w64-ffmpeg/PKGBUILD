@@ -130,6 +130,7 @@ build() {
     --enable-vulkan
     --enable-zlib
     --disable-doc
+    --disable-mediafoundation
     --build-suffix=-if
   )
 
