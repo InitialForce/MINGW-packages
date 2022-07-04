@@ -9,7 +9,7 @@ pkgbase="mingw-w64-${_realname}"
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}"
          "${MINGW_PACKAGE_PREFIX}-${_realname}-debug"
          "${MINGW_PACKAGE_PREFIX}-${_realname}-bundled")
-pkgver=4.4.1
+pkgver=4.4.2
 pkgrel=1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
