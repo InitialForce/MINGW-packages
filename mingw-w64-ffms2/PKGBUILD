@@ -22,8 +22,10 @@ makedepends=(
     "${MINGW_PACKAGE_PREFIX}-gcc"
     "${MINGW_PACKAGE_PREFIX}-pkg-config"
      unzip
+     autogen
      autoconf
      automake
+     libtool
      base-devel
 )
 source=("${_realname}"::"git+https://github.com/InitialForce/FFMS2#branch=master"
