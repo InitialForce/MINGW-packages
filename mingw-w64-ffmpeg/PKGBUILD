@@ -67,23 +67,13 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              patch
              make
              unzip)
-source=()
+source=("${_realname}"::"git+https://github.com/FFmpeg/FFmpeg.git#tag=n${pkgver}")
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
-sha256sums=()
+sha256sums=('SKIP')
 
 prepare() {
-  # Copy source files from parent directory (this ffmpeg repo), excluding build artifacts
-  mkdir -p "${srcdir}/${_realname}"
-  cd "${startdir}/.."
-  # Copy all files except build directory and .git
-  find . -maxdepth 1 -type f -exec cp {} "${srcdir}/${_realname}/" \;
-  for dir in compat doc ffbuild fftools libav* libpost* libsw* tests tools; do
-    if [ -d "$dir" ]; then
-      cp -r "$dir" "${srcdir}/${_realname}/" 2>/dev/null || true
-    fi
-  done
-
   cd "${srcdir}/${_realname}"
+  # FFmpeg 7.1 should not need the old patches that were required for 4.4.2
 }
 
 build() {
