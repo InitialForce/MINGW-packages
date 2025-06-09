@@ -4,12 +4,16 @@
 # Contributor: Ray Donnelly <mingw.android@gmail.com>
 
 _realname=ffmpeg-if
-_variants="-shared -shared-debug"
+_variant=${FFMPEG_VARIANT:-shared}
 pkgbase="mingw-w64-${_realname}"
-pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}"
-         "${MINGW_PACKAGE_PREFIX}-${_realname}-debug"
-         "${MINGW_PACKAGE_PREFIX}-${_realname}-bundled")
-pkgver=4.4.2
+if [[ "$_variant" == "shared-debug" ]]; then
+  pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}-debug")
+elif [[ "$_variant" == "shared-bundled" ]]; then
+  pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}-bundled")
+else
+  pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+fi
+pkgver=7.1
 pkgrel=1
 pkgdesc="Complete and free Internet live audio and video broadcasting solution (mingw-w64)"
 arch=('any')
@@ -19,17 +23,18 @@ license=('LGPL')
 options=('strip')
 depends=("${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-bzip2"
-         "${MINGW_PACKAGE_PREFIX}-celt"
-         $([[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]] || echo "${MINGW_PACKAGE_PREFIX}-frei0r-plugins")
-         "${MINGW_PACKAGE_PREFIX}-amf-headers"
-         "${MINGW_PACKAGE_PREFIX}-fontconfig"
          "${MINGW_PACKAGE_PREFIX}-dav1d"
+         "${MINGW_PACKAGE_PREFIX}-fontconfig"
+         "${MINGW_PACKAGE_PREFIX}-freetype"
+         "${MINGW_PACKAGE_PREFIX}-fribidi"
          "${MINGW_PACKAGE_PREFIX}-gnutls"
-         "${MINGW_PACKAGE_PREFIX}-gsm"
+         "${MINGW_PACKAGE_PREFIX}-harfbuzz"
          "${MINGW_PACKAGE_PREFIX}-lame"
+         "${MINGW_PACKAGE_PREFIX}-libass"
+         "${MINGW_PACKAGE_PREFIX}-libbluray"
          "${MINGW_PACKAGE_PREFIX}-libcaca"
-         "${MINGW_PACKAGE_PREFIX}-libexif"
-         "${MINGW_PACKAGE_PREFIX}-libmfx"
+         "${MINGW_PACKAGE_PREFIX}-libiconv"
+         "${MINGW_PACKAGE_PREFIX}-libjxl"
          "${MINGW_PACKAGE_PREFIX}-libmodplug"
          "${MINGW_PACKAGE_PREFIX}-libsoxr"
          "${MINGW_PACKAGE_PREFIX}-libtheora"
@@ -40,52 +45,45 @@ depends=("${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-openal"
          "${MINGW_PACKAGE_PREFIX}-openjpeg2"
          "${MINGW_PACKAGE_PREFIX}-opus"
+         "${MINGW_PACKAGE_PREFIX}-rtmpdump"
          "${MINGW_PACKAGE_PREFIX}-SDL2"
          "${MINGW_PACKAGE_PREFIX}-speex"
          "${MINGW_PACKAGE_PREFIX}-srt"
          "${MINGW_PACKAGE_PREFIX}-vulkan"
+         "${MINGW_PACKAGE_PREFIX}-zimg"
          "${MINGW_PACKAGE_PREFIX}-zlib")
 
-makedepends=("${MINGW_PACKAGE_PREFIX}-dlfcn"
-             "${MINGW_PACKAGE_PREFIX}-gcc"
-             $([[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]] || echo "${MINGW_PACKAGE_PREFIX}-clang")
-             "${MINGW_PACKAGE_PREFIX}-pkg-config"
-             "${MINGW_PACKAGE_PREFIX}-amf-headers"
-             "${MINGW_PACKAGE_PREFIX}-ffnvcodec-headers"
-             "${MINGW_PACKAGE_PREFIX}-nasm"
+makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-autotools"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-dlfcn"
+             "${MINGW_PACKAGE_PREFIX}-vulkan-headers"
+             $([[ ${MINGW_PACKAGE_PREFIX} == *-clang-aarch64* ]] || echo "${MINGW_PACKAGE_PREFIX}-amf-headers")
+             $([[ ${MINGW_PACKAGE_PREFIX} == *-clang-aarch64* ]] || echo "${MINGW_PACKAGE_PREFIX}-ffnvcodec-headers")
+             $([[ ${MINGW_PACKAGE_PREFIX} == *-clang-aarch64* ]] || echo "${MINGW_PACKAGE_PREFIX}-nasm")
              "${MINGW_PACKAGE_PREFIX}-ntldd-git"
-             "${MINGW_PACKAGE_PREFIX}-aom"
              git
              diffutils
              patch
              make
-             unzip
-         )
-source=("${_realname}"::"git+https://github.com/InitialForce/FFmpeg#branch=stable/4.4"
-        "pathtools.c"
-        "pathtools.h"
-        "0005-Win32-Add-path-relocation-to-frei0r-plugins-search.patch"
-        "0001-get_cabac_inline_x86-Dont-inline-if-32-bit-clang-on-windows.patch")
+             unzip)
+source=()
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
-sha256sums=('SKIP'
-            'SKIP'
-            '6ce4dcf4ef6c4bce48dbcb6f1b5226baf79f74ac76719fb0c06419a0aadb37a3'
-            '63aa930515c10484a68cb8940f453cba01cf3f5d0d72c86b0bc03777acb704ba'
-            'b19edf64c3daff6acebeb2e45be4e13c5ee035fd24ba1bf9e77a5376efe83628')
+sha256sums=()
 
 prepare() {
-  test ! -d "${startdir}/../mingw-w64-pathtools" || {
-    cmp "${startdir}/../mingw-w64-pathtools/pathtools.c" "${srcdir}/pathtools.c" &&
-    cmp "${startdir}/../mingw-w64-pathtools/pathtools.h" "${srcdir}/pathtools.h"
-  } || exit 1
+  # Copy source files from parent directory (this ffmpeg repo), excluding build artifacts
+  mkdir -p "${srcdir}/${_realname}"
+  cd "${startdir}/.."
+  # Copy all files except build directory and .git
+  find . -maxdepth 1 -type f -exec cp {} "${srcdir}/${_realname}/" \;
+  for dir in compat doc ffbuild fftools libav* libpost* libsw* tests tools; do
+    if [ -d "$dir" ]; then
+      cp -r "$dir" "${srcdir}/${_realname}/" 2>/dev/null || true
+    fi
+  done
 
   cd "${srcdir}/${_realname}"
-  cp -fHv "${srcdir}"/pathtools.[ch] libavfilter/
-
-  patch -p1 -i "${srcdir}/0005-Win32-Add-path-relocation-to-frei0r-plugins-search.patch"
-
-  # Backport from https://github.com/FFmpeg/FFmpeg/commit/8990c5869e27fcd43b53045f87ba251f42e7d293
-  patch -p1 -i "${srcdir}/0001-get_cabac_inline_x86-Dont-inline-if-32-bit-clang-on-windows.patch"
 }
 
 build() {
@@ -95,24 +93,31 @@ build() {
   LDFLAGS+=""
 
   local -a common_config
-  if check_option "debug" "n"; then
-      _extra_config+=("--disable-debug")
-  else
-      _extra_config+=("--enable-debug")
-  fi
-
   common_config+=(
-    --enable-amf
+    --disable-gpl
+    --enable-version3
+    --disable-doc
     --enable-dxva2
     --enable-d3d11va
+    --enable-d3d12va
     --enable-fontconfig
-    --enable-ffnvcodec
+    --enable-gnutls
+    --enable-iconv
+    --enable-libaom
+    --enable-libass
     --enable-libcaca
-    --enable-libcelt
-    --enable-libmfx
+    --enable-libdav1d
+    --enable-libfontconfig
+    --enable-libfreetype
+    --enable-libfribidi
+    --enable-libharfbuzz
+    --enable-libjxl
+    --enable-libmodplug
     --enable-libmp3lame
     --enable-libopenjpeg
     --enable-libopus
+    --enable-librtmp
+    --enable-libsoxr
     --enable-libspeex
     --enable-libsrt
     --enable-libtheora
@@ -120,127 +125,178 @@ build() {
     --enable-libvpx
     --enable-libwebp
     --enable-libxml2
-    --enable-nvenc
     --enable-openal
     --enable-pic
     --enable-postproc
     --enable-runtime-cpudetect
     --enable-swresample
-    --enable-version3
     --enable-vulkan
+    --enable-libzimg
     --enable-zlib
-    --disable-doc
-    --disable-mediafoundation
+    --enable-amf
+    --enable-nvenc
     --build-suffix=-if
   )
 
-  for _variant in $_variants; do
-    [[ -d "${srcdir}/build-${MINGW_CHOST}${_variant}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}${_variant}"
-    mkdir -p "${srcdir}/build-${MINGW_CHOST}${_variant}" && cd "${srcdir}/build-${MINGW_CHOST}${_variant}"
-    if [[ ${_variant} == -shared ]]; then
-      ENABLE_VARIANT=--enable-shared
-    elif [[ ${_variant} == -shared-debug ]]; then
-      ENABLE_VARIANT="--enable-shared --disable-stripping --disable-optimizations --extra-cflags=-Og --extra-cflags=-fno-omit-frame-pointer --enable-debug=3 --extra-cflags=-fno-inline"
-    elif [[ ${_variant} == -static ]]; then
-      ENABLE_VARIANT=--enable-static
-    fi
-    CC=${MINGW_PREFIX}/bin/gcc \
-    CXX=${MINGW_PREFIX}/bin/g++ \
-    ../${_realname}/configure \
-      --prefix=${MINGW_PREFIX} \
-      --target-os=mingw32 \
-      --arch=${CARCH%%-*} \
-      "${common_config[@]}" \
-      --logfile=config.log \
-      ${ENABLE_VARIANT} ||
-      {
-        cat config.log
-        exit 1
-      }
-    make VERBOSE=1
-  done
+  # Configure variant-specific options
+  if [[ "$_variant" == "shared-debug" ]]; then
+    common_config+=(--enable-shared --disable-stripping --disable-optimizations --extra-cflags=-Og --extra-cflags=-fno-omit-frame-pointer --enable-debug=3 --extra-cflags=-fno-inline)
+  else
+    common_config+=(--enable-shared --disable-debug --disable-stripping)
+  fi
+
+  [[ -d "${srcdir}/build-${MINGW_CHOST}" ]] && rm -rf "${srcdir}/build-${MINGW_CHOST}"
+  mkdir -p "${srcdir}/build-${MINGW_CHOST}" && cd "${srcdir}/build-${MINGW_CHOST}"
+
+  # Fix compiler detection for CLANG64 environment
+  if [[ "${MINGW_PREFIX}" == "/clang64" ]]; then
+    export CC="clang"
+    export CXX="clang++"
+  else
+    export CC="gcc"
+    export CXX="g++"
+  fi
+
+  # Debug: Print compiler info
+  echo "MINGW_PREFIX=${MINGW_PREFIX}"
+  echo "CC=${CC}"
+  echo "CXX=${CXX}"
+  echo "which \$CC: $(which ${CC})"
+  echo "PATH=${PATH}"
+
+  ../${_realname}/configure \
+    --prefix=${MINGW_PREFIX} \
+    --target-os=mingw32 \
+    --arch=${CARCH%%-*} \
+    --cc="${CC}" \
+    --cxx="${CXX}" \
+    "${common_config[@]}" \
+    --logfile=config.log ||
+    {
+      cat config.log
+      exit 1
+    }
+  make VERBOSE=1
 }
 
 check() {
-  for _variant in $_variants; do
-    cd "${srcdir}/build-${MINGW_CHOST}${_variant}"
-    # workaround for conflict with SDL main(), use it if you have SDL installed
-    # make check CC_C="-c -Umain"
-    make check VERBOSE=1 || true
-  done
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  # workaround for conflict with SDL main(), use it if you have SDL installed
+  # make check CC_C="-c -Umain"
+  make check VERBOSE=1 || true
 }
 
-package_() {
+package() {
+  cd "${srcdir}/build-${MINGW_CHOST}"
+  make DESTDIR="${pkgdir}" install
+
+  # Clean up
   rm -f ${pkgdir}/${MINGW_PREFIX}/lib/*.def
   rm -f ${pkgdir}/${MINGW_PREFIX}/bin/*.lib
 
-  #find ${pkgdir}${MINGW_PREFIX}/bin -type f -name "*.exe" -exec objcopy --subsystem console {} \;
-
+  # Fix pkg-config files
   local PREFIX_DEPS=$(cygpath -am ${MINGW_PREFIX})
   find ${pkgdir}${MINGW_PREFIX}/lib/pkgconfig -name *.pc -exec sed -i -e"s|${PREFIX_DEPS}|${MINGW_PREFIX}|g" {} \;
+
+  # Variant-specific post-processing
+  if [[ "$_variant" == "shared-debug" ]]; then
+    # Convert symbols for debug variant
+    wget "https://github.com/rainers/cv2pdb/releases/download/v0.49/cv2pdb-0.49.zip"
+    mkdir cv2pdb
+    unzip "cv2pdb-0.49.zip" -d cv2pdb
+    pushd "${pkgdir}${MINGW_PREFIX}"/bin/
+    for file in *.dll; do $OLDPWD/cv2pdb/cv2pdb.exe $file; done
+    popd
+    rm -rf cv2pdb*
+  elif [[ "$_variant" == "shared-bundled" ]]; then
+    # Collect dependencies for bundled variant
+    pushd "${pkgdir}${MINGW_PREFIX}"/bin/
+    echo "=== Collecting dependencies for bundled variant ==="
+    echo "Files in bin directory:"
+    ls -la *.dll *.exe 2>/dev/null || echo "No DLL/EXE files found"
+
+    # Check if ntldd exists and works
+    if command -v ntldd >/dev/null 2>&1; then
+      echo "Running ntldd to find dependencies..."
+      echo "Raw ntldd output (first 20 lines):"
+      ntldd -R *.dll *.exe 2>/dev/null | head -20
+
+      # Try with MINGW_PREFIX filter first
+      deps=$(ntldd -R *.dll *.exe 2>/dev/null | grep -v WINDOWS | grep -v "not found" | grep "${MINGW_PREFIX}" | awk '{print $3}' | sort | uniq)
+
+      if [[ -n "$deps" ]]; then
+        echo "Found dependencies with MINGW_PREFIX filter:"
+        echo "$deps"
+
+        # Copy each dependency
+        while IFS= read -r dep; do
+          if [[ -f "$dep" ]]; then
+            echo "Copying: $dep"
+            cp -u "$dep" . || echo "Failed to copy $dep"
+          else
+            echo "Dependency not found: $dep"
+          fi
+        done <<< "$deps"
+      else
+        echo "No dependencies found with MINGW_PREFIX filter, trying broader search..."
+        # Try broader search for mingw dependencies
+        deps=$(ntldd -R *.dll *.exe 2>/dev/null | grep -v WINDOWS | grep -v "not found" | grep -v System32 | grep "\.dll" | awk '{print $3}' | grep -E "^(/clang64|/mingw64)" | sort | uniq)
+
+        if [[ -n "$deps" ]]; then
+          echo "Found dependencies with broader search:"
+          echo "$deps"
+
+          while IFS= read -r dep; do
+            if [[ -f "$dep" ]]; then
+              echo "Copying: $dep"
+              cp -u "$dep" . || echo "Failed to copy $dep"
+            else
+              echo "Dependency not found: $dep"
+            fi
+          done <<< "$deps"
+        else
+          echo "No dependencies found by ntldd"
+        fi
+      fi
+    else
+      echo "ntldd command not found - using ldd as fallback"
+    fi
+
+    # Always run ldd as additional check
+    echo "=== Running ldd for additional dependency detection ==="
+    for file in ffmpeg.exe ffplay.exe ffprobe.exe *.dll; do
+      if [[ -f "$file" ]]; then
+        echo "Checking dependencies for $file with ldd:"
+        ldd_output=$(ldd "$file" 2>/dev/null)
+        echo "$ldd_output" | head -10
+
+        # Extract mingw dependencies
+        mingw_deps=$(echo "$ldd_output" | grep -E "\.dll.*=>" | grep -E "(clang64|mingw64)" | awk '{print $3}' | sort | uniq)
+
+        if [[ -n "$mingw_deps" ]]; then
+          echo "Found mingw dependencies for $file:"
+          echo "$mingw_deps"
+
+          while IFS= read -r dep; do
+            basename_dep=$(basename "$dep")
+            if [[ -f "$dep" ]] && [[ ! -f "$basename_dep" ]]; then
+              echo "Copying: $dep -> $basename_dep"
+              cp -u "$dep" . || echo "Failed to copy $dep"
+            elif [[ -f "$basename_dep" ]]; then
+              echo "Already exists: $basename_dep"
+            else
+              echo "Not found: $dep"
+            fi
+          done <<< "$mingw_deps"
+        else
+          echo "No mingw dependencies found for $file"
+        fi
+        echo "---"
+      fi
+    done
+
+    echo "Final contents of bin directory:"
+    ls -la
+    popd
+  fi
 }
-
-collect_deps() {
-  pushd "${pkgdir}${MINGW_PREFIX}"/bin/
-  ntldd -R *.dll *.exe |grep -v WINDOWS | grep -v "not found" | grep ${MINGW_ARCH} | column -t | awk '{print $3}' | sed 's|\\|/|g' | xargs cygpath | xargs -I{} cp -u {} .
-  popd
-}
-
-convert_symbols() {
-  wget "https://github.com/rainers/cv2pdb/releases/download/v0.49/cv2pdb-0.49.zip"
-  mkdir cv2pdb
-  unzip "cv2pdb-0.49.zip" -d cv2pdb
-  pushd "${pkgdir}${MINGW_PREFIX}"/bin/
-  for file in *.dll; do $OLDPWD/cv2pdb/cv2pdb.exe $file; done
-  popd
-  rm -rf cv2pdb*
-}
-
-package_mingw-w64-x86_64-ffmpeg-if() {
-  cd "${srcdir}/build-${MINGW_CHOST}-shared"
-  make DESTDIR="${pkgdir}" install
-  package_
-}
-
-package_mingw-w64-x86_64-ffmpeg-if-debug() {
-  cd "${srcdir}/build-${MINGW_CHOST}-shared-debug"
-  make DESTDIR="${pkgdir}" install
-  package_
-  convert_symbols
-}
-
-package_mingw-w64-x86_64-ffmpeg-if-bundled() {
-  cd "${srcdir}/build-${MINGW_CHOST}-shared"
-  make DESTDIR="${pkgdir}" install
-  package_
-  collect_deps
-}
-
-package_mingw-w64-clang-x86_64-ffmpeg-if() {
-  cd "${srcdir}/build-${MINGW_CHOST}-shared"
-  make DESTDIR="${pkgdir}" install
-  package_
-}
-
-package_mingw-w64-clang-x86_64-ffmpeg-if-debug() {
-  cd "${srcdir}/build-${MINGW_CHOST}-shared-debug"
-  make DESTDIR="${pkgdir}" install
-  package_
-  convert_symbols
-}
-
-package_mingw-w64-clang-x86_64-ffmpeg-if-bundled() {
-  cd "${srcdir}/build-${MINGW_CHOST}-shared"
-  make DESTDIR="${pkgdir}" install
-  package_
-  collect_deps
-}
-
-#package_mingw-w64-i686-ffmpeg() {
-  #package_
-#}
-
-#package_mingw-w64-i686-ffmpeg-bundled() {
-  #package_
-  #collect_deps
-#}

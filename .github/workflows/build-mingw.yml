@@ -1,0 +1,86 @@
+name: Build FFmpeg LGPL with MINGW
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ 'release/*', 'master', 'main' ]
+  pull_request:
+    branches: [ 'release/*', 'master', 'main' ]
+
+jobs:
+  build-ffmpeg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          { msystem: MINGW64, toolchain: mingw-w64-x86_64-toolchain, runner: windows-latest, variant: shared, suffix: "" },
+          { msystem: MINGW64, toolchain: mingw-w64-x86_64-toolchain, runner: windows-latest, variant: shared-debug, suffix: "-debug" },
+          { msystem: MINGW64, toolchain: mingw-w64-x86_64-toolchain, runner: windows-latest, variant: shared-bundled, suffix: "-bundled" },
+          { msystem: CLANG64, toolchain: mingw-w64-clang-x86_64-toolchain, runner: windows-latest, variant: shared, suffix: "" },
+          { msystem: CLANG64, toolchain: mingw-w64-clang-x86_64-toolchain, runner: windows-latest, variant: shared-debug, suffix: "-debug" },
+          { msystem: CLANG64, toolchain: mingw-w64-clang-x86_64-toolchain, runner: windows-latest, variant: shared-bundled, suffix: "-bundled" },
+        ]
+    name: FFmpeg-${{ matrix.msystem }}-${{ matrix.variant }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Get CPU Name
+        run : |
+          Get-CIMInstance -Class Win32_Processor | Select-Object -Property Name
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fix line endings
+        shell: bash
+        run: |
+          # Convert CRLF to LF for all build files using sed
+          find mingw-w64-ffmpeg -type f \( -name "*.c" -o -name "*.h" -o -name "*.sh" -o -name "*.patch" -o -name "PKGBUILD" \) -exec sed -i 's/\r$//' {} +
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          architecture: 'x64'
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          install: >-
+            base-devel
+            ${{ matrix.toolchain }}
+            git
+            diffutils
+            patch
+            make
+            unzip
+          update: true
+
+      - name: Build FFmpeg LGPL
+        shell: msys2 {0}
+        env:
+          FFMPEG_VARIANT: ${{ matrix.variant }}
+        run: |
+          cd mingw-w64-ffmpeg
+          # Make artifacts directory
+          mkdir -p artifacts
+
+          # Build using makepkg with variant
+          makepkg --noconfirm --noprogressbar --nocheck --syncdeps --rmdeps --cleanbuild
+
+          # Move packages to artifacts
+          mv *.pkg.tar.* artifacts/
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.msystem }}-${{ matrix.variant }}-ffmpeg-lgpl-packages
+          path: mingw-w64-ffmpeg/artifacts/*.pkg.tar.*
+
+      - name: SHA-256 Checksums
+        shell: msys2 {0}
+        run: |
+          cd mingw-w64-ffmpeg/artifacts
+          sha256sum *
