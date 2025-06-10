@@ -1,4 +1,4 @@
-name: Build FFmpeg LGPL with MINGW
+name: Build FFmpeg and FFMS2 with MINGW
 
 concurrency:
   group: ${{ github.ref }}
@@ -76,11 +76,86 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.msystem }}-${{ matrix.variant }}-ffmpeg-lgpl-packages
+          name: ffmpeg-${{ matrix.msystem }}-${{ matrix.variant }}-packages
           path: mingw-w64-ffmpeg/artifacts/*.pkg.tar.*
 
       - name: SHA-256 Checksums
         shell: msys2 {0}
         run: |
           cd mingw-w64-ffmpeg/artifacts
+          sha256sum *
+
+  build-ffms2:
+    needs: build-ffmpeg
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          { msystem: MINGW64, toolchain: mingw-w64-x86_64-toolchain, runner: windows-latest, variant: shared, suffix: "" },
+          { msystem: MINGW64, toolchain: mingw-w64-x86_64-toolchain, runner: windows-latest, variant: shared-debug, suffix: "-debug" },
+          { msystem: CLANG64, toolchain: mingw-w64-clang-x86_64-toolchain, runner: windows-latest, variant: shared, suffix: "" },
+          { msystem: CLANG64, toolchain: mingw-w64-clang-x86_64-toolchain, runner: windows-latest, variant: shared-debug, suffix: "-debug" },
+        ]
+    name: FFMS2-${{ matrix.msystem }}-${{ matrix.variant }}
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Get CPU Name
+        run : |
+          Get-CIMInstance -Class Win32_Processor | Select-Object -Property Name
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fix line endings
+        shell: bash
+        run: |
+          # Convert CRLF to LF for all build files using sed
+          find mingw-w64-ffms2 -type f \( -name "*.c" -o -name "*.h" -o -name "*.sh" -o -name "*.patch" -o -name "PKGBUILD" \) -exec sed -i 's/\r$//' {} +
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          architecture: 'x64'
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            ${{ matrix.toolchain }}
+            mingw-w64-${{ matrix.msystem }}-ntldd-git
+
+      - name: Download FFmpeg artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.msystem }}-${{ matrix.variant }}-packages
+          path: ffmpeg-packages
+
+      - name: Install FFmpeg dependencies
+        shell: msys2 {0}
+        run: |
+          cd ffmpeg-packages
+          pacman -U --noconfirm *.pkg.tar.*
+
+      - name: Build FFMS2
+        shell: msys2 {0}
+        env:
+          FFMS2_VARIANT: ${{ matrix.variant }}
+        run: |
+          cd mingw-w64-ffms2
+          MAKEFLAGS="-j$(nproc)" makepkg --noconfirm --noprogressbar --nocheck --syncdeps --rmdeps --cleanbuild
+          mkdir -p artifacts
+          mv *.pkg.tar.* artifacts/
+
+      - name: Upload FFMS2 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffms2-${{ matrix.msystem }}-${{ matrix.variant }}-packages
+          path: mingw-w64-ffms2/artifacts/*.pkg.tar.*
+
+      - name: SHA-256 Checksums
+        shell: msys2 {0}
+        run: |
+          cd mingw-w64-ffms2/artifacts
           sha256sum *
