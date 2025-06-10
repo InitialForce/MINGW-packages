@@ -68,7 +68,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              patch
              make
              unzip)
-source=("${_realname}"::"git+https://github.com/FFmpeg/FFmpeg.git#tag=n${pkgver}")
+source=("${_realname}"::"git+https://github.com/InitialForce/FFmpeg.git#branch=release/7.1")
 validpgpkeys=('FCF986EA15E6E293A5644F10B4322F04D67658D8')
 sha256sums=('SKIP')
 
