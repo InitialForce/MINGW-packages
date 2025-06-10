@@ -26,7 +26,7 @@ makedepends=(
      unzip
      base-devel
 )
-source=("${_realname}"::"git+https://github.com/InitialForce/FFMS2#branch=master"
+source=("${_realname}"::"git+https://github.com/InitialForce/FFMS2#branch=release/2.40"
         "0001-ffmsindex-add-municode-ldflag.patch")
 
 sha256sums=('SKIP'
