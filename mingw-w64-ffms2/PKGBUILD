@@ -26,16 +26,12 @@ makedepends=(
      unzip
      base-devel
 )
-source=("${_realname}"::"git+https://github.com/InitialForce/FFMS2#branch=master"
-        "0001-ffmsindex-add-municode-ldflag.patch")
+source=("${_realname}"::"git+https://github.com/InitialForce/FFMS2#branch=master")
 
-sha256sums=('SKIP'
-            '59e2150127dbdf2645bab6cbbd8842cc58dd33ce12238e76d1b2916d9d051f56')
+sha256sums=('SKIP')
 
 prepare() {
   cd "${srcdir}/${_realname}"
-
-  patch -Np1 -i "${srcdir}/0001-ffmsindex-add-municode-ldflag.patch"
 
   mkdir -p src/config
   autoupdate
