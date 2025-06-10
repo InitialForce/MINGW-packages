@@ -35,6 +35,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-aom"
          "${MINGW_PACKAGE_PREFIX}-libcaca"
          "${MINGW_PACKAGE_PREFIX}-libiconv"
          "${MINGW_PACKAGE_PREFIX}-libjxl"
+         "${MINGW_PACKAGE_PREFIX}-libmfx"
          "${MINGW_PACKAGE_PREFIX}-libmodplug"
          "${MINGW_PACKAGE_PREFIX}-libsoxr"
          "${MINGW_PACKAGE_PREFIX}-libtheora"
@@ -102,6 +103,7 @@ build() {
     --enable-libfribidi
     --enable-libharfbuzz
     --enable-libjxl
+    --enable-libmfx
     --enable-libmodplug
     --enable-libmp3lame
     --enable-libopenjpeg
