@@ -35,7 +35,8 @@ sha256sums=('SKIP'
 prepare() {
   cd "${srcdir}/${_realname}"
 
-  patch -Np1 -i "${srcdir}/0001-ffmsindex-add-municode-ldflag.patch"
+  # Skip patch for now - may not be needed with current FFMS2 version
+  # patch -Np1 -i "${srcdir}/0001-ffmsindex-add-municode-ldflag.patch"
 
   mkdir -p src/config
   autoupdate
