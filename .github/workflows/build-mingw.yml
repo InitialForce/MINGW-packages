@@ -124,7 +124,7 @@ jobs:
           update: true
           install: >-
             ${{ matrix.toolchain }}
-            mingw-w64-${{ matrix.msystem }}-ntldd-git
+            ${{ matrix.msystem == 'MINGW64' && 'mingw-w64-x86_64-ntldd-git' || 'mingw-w64-clang-x86_64-ntldd-git' }}
 
       - name: Download FFmpeg artifacts
         uses: actions/download-artifact@v4
